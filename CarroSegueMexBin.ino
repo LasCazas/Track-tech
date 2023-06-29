@@ -1,5 +1,14 @@
 #include <PID_v1_bc.h>
 
+//Declaração de Constantes
+#define DELTAPULSO 11 //Pesquisei e deu 11 pulsos por volta
+#define MAXRPM 280
+#define RPMM 150 
+#define PWM 230
+#define QtPulso 27
+const int Branco = 1;
+const int Preto = 0;
+
 // Define os pinos dos sensores E,C,D,O,Esq,Centro,Direita,Oposto
 #define PSenOE 26
 #define PSenE 27
@@ -31,23 +40,16 @@
 #define DeltaF 30
 //============================================================
 // Casos =====================================================
-#define Ideal 4   //Ideal
-#define QDDL 21 //Quadrado dos dois lados
-#define TE 28   // Caso T na Esquerda
-#define TD 7      // Caso T na Direita
-#define Encru 31 //Caso Encruzilhada
-#define CD 6     //caso Central e direita na linha
-#define DD 2   // Caso apenas Direito na linha
-#define CE 12     //caso Central e esquerda na linha
-#define EE 23   // Caso apenas Esquerda na linha
+#define Ideal 4   //Ideal                            0 0 1 0 0
+#define QDDL 21 //Quadrado dos dois lados            1 0 1 0 1
+#define TE 28   // Caso T na Esquerda                1 1 1 0 0 
+#define TD 7      // Caso T na Direita               0 0 1 1 1
+#define Encru 31 //Caso Encruzilhada                 1 1 1 1 1
+#define CD 6     //caso Central e direita na linha   0 0 1 1 0
+#define DD 2   // Caso apenas Direito na linha       0 0 0 1 0
+#define CE 12     //caso Central e esquerda na linha 0 1 1 0 0
+#define EE 8   // Caso apenas Esquerda na linha      0 1 0 0 0
 //============================================================
-//Declaração de Constantes
-#define DELTAPULSO 11 //Pesquisei e deu 11 pulsos por volta
-#define MAXRPM 75
-#define PWM 230
-#define QtPulso 27
-const int Branco = 1;
-const int Preto = 0;
 
 //Declaração de Variáveis
 volatile unsigned long pulso1;
@@ -57,8 +59,7 @@ double velocidade1 = 0;
 volatile unsigned long pulso2;
 double velocidade2 = 0;
 
-double me = map(PWM,0,255,0,200), md = map(PWM,0,255,0,200);
-double MotorE = PWM, MotorD = PWM;
+double MotorE = RPMM, MotorD = RPMM;
 double ErroE = 0, ErroD = 0;
 
 int pulsin = 0, Es = 1, virou = 0;
@@ -68,8 +69,8 @@ volatile unsigned long pulso;
 int Kp = 100, Kd = 0, Ki = 0.0001;
 //Especificando os parâmetros do construtor
 //PID myPID(&Input, &Output, &Setpoint,Kp,Ki,Kd, DIRECT);
-PID myPID(&velocidade1, &MotorD, &md, Kp, Ki, Kd, DIRECT);
-PID miPID(&velocidade2, &MotorE, &me, Kp, Ki, Kd, DIRECT);
+PID myPID(&velocidade1, &MotorD, &RPMM, Kp, Ki, Kd, DIRECT);
+PID miPID(&velocidade2, &MotorE, &RPMM, Kp, Ki, Kd, DIRECT);
 
 int SenOE,SenE, SenC, SenD, SenOD, LeAnte, VDire = 0, VEsq = 0; //LeAnte = leitura anterior VDire = Virar para direita
 int QuadradoD = 0,QuadradoE = 0,QtQuadRef = 0,Leitura = 0;
@@ -110,21 +111,18 @@ void controla_velocidade() {
 
   velocidade2 = (200 * pulso2 / dT1) / 0.37;
   pulso2 = 01;
-  //Fim de Leitura
-  //Serial.print("Velocidade 1: ");
-  //Serial.print(velocidade1);
-  //Serial.print("  Velocidade 2: ");
-  //Serial.println(velocidade2);
+  //Fim de Leitura//Serial.print("Velocidade 1: ");//Serial.print(velocidade1);//Serial.print("  Velocidade 2: ");//Serial.println(velocidade2);
+  
+  
 
+  myPID.Compute();
+  miPID.Compute();
   //Conversão RPM para PWM
   velocidade1 = map(velocidade1, 0, MAXRPM, 0, 255);
   velocidade2 = map(velocidade2, 0, MAXRPM, 0, 255);
 
-  myPID.Compute();
-  miPID.Compute();
-
   Serial.print("Set Point:");
-  Serial.print(md);
+  Serial.print(RPMM);
   Serial.print(",");
   Serial.print("Output:");
   Serial.println(MotorD);
@@ -137,33 +135,35 @@ void controla_velocidade() {
 }
 
 void Andar(int Dir,int delt = Delta){
+  int PWmE = map(MotorE, 0, MAXRPM, 0, 255);
+  int PWmD = map(MotorD, 0, MAXRPM, 0, 255);
   switch(Dir){
     case Frente:
       digitalWrite(IN1E,HIGH);
       digitalWrite(IN2E,LOW);
-      analogWrite(PIN_MOTORE, MotorE);
+      analogWrite(PIN_MOTORE, PWmE);
       //Motor_D
       digitalWrite(IN1D,HIGH);
       digitalWrite(IN2D,LOW);
-      analogWrite(PIN_MOTORD, MotorD);
+      analogWrite(PIN_MOTORD, PWmD);
       break;
     case FinoD:
       digitalWrite(IN1E,HIGH);
       digitalWrite(IN2E,LOW);
-      analogWrite(PIN_MOTORE, MotorE + delt);
+      analogWrite(PIN_MOTORE, PWmE + delt);
       //Motor_D
       digitalWrite(IN1D,HIGH);
       digitalWrite(IN2D,LOW);
-      analogWrite(PIN_MOTORD, MotorD - delt);
+      analogWrite(PIN_MOTORD, PWmD - delt);
       break;
     case FinoE:
       digitalWrite(IN1E,HIGH);
       digitalWrite(IN2E,LOW);
-      analogWrite(PIN_MOTORE, MotorE - delt);
+      analogWrite(PIN_MOTORE, PWmE - delt);
       //Motor_D
       digitalWrite(IN1D,HIGH);
       digitalWrite(IN2D,LOW);
-      analogWrite(PIN_MOTORD, MotorD + delt);
+      analogWrite(PIN_MOTORD, PWmD + delt);
       break;
     case Parar:
       digitalWrite(IN1E,HIGH);
@@ -176,20 +176,20 @@ void Andar(int Dir,int delt = Delta){
     case Direita:
       digitalWrite(IN1E,HIGH);
       digitalWrite(IN2E,LOW);
-      analogWrite(PIN_MOTORE, MotorE);
+      analogWrite(PIN_MOTORE, PWmE);
       //Motor_D
       digitalWrite(IN2D,LOW);
       digitalWrite(IN1D,HIGH);
-      analogWrite(PIN_MOTORD, MotorD);
+      analogWrite(PIN_MOTORD, PWmD);
       break;
    case Esquerda:
       digitalWrite(IN1E,LOW);
       digitalWrite(IN2E,HIGH);
-      analogWrite(PIN_MOTORE, MotorE);
+      analogWrite(PIN_MOTORE, PWmE);
       //Motor_D
       digitalWrite(IN1D,HIGH);
       digitalWrite(IN2D,LOW);
-      analogWrite(PIN_MOTORD, MotorD);
+      analogWrite(PIN_MOTORD, PWmD);
       break;  
   }    
 }
@@ -249,6 +249,7 @@ void loop() {
        QtQuadRef = QuadradoE;
       }    
     }
+////////////////////////////////////////////////////////   FININ  ////////////////////////////////////////////////////////
     if (Es != 2 && Es != 3){
       switch (Leitura){
       case Ideal:// Se o sensor central estiver acima do limite, o robô continua em linha reta
@@ -329,13 +330,14 @@ void loop() {
       agora = millis();
     }
     LeAnte = SenOE || SenOD;
-    PID.Compute();
+    //myPID.Compute();
+    //miPID.Compute();
   }
   //Redefine as variáveis para novo intervalo de tempo
   else {
     ErroE = 0;
     ErroD = 0;
-    MotorE = PWM;
-    MotorD = PWM;
+    //MotorE = PWM;
+    //MotorD = PWM;
   }
 }
