@@ -42,9 +42,9 @@
 #define EE 23   // Caso apenas Esquerda na linha
 //============================================================
 //Declaração de Constantes
-#define DELTAPULSO 20
+#define DELTAPULSO 11 //Pesquisei e deu 11 pulsos por volta
 #define MAXRPM 75
-#define PWM 70
+#define PWM 230
 #define QtPulso 27
 const int Branco = 1;
 const int Preto = 0;
