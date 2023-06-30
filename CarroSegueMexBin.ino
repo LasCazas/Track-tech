@@ -3,7 +3,7 @@
 //Declaração de Constantes
 #define DELTAPULSO 11 //Pesquisei e deu 11 pulsos por volta
 #define MAXRPM 280
-#define RPMM 150 
+const int RPMM = 150;
 #define PWM 230
 #define QtPulso 27
 const int Branco = 1;
