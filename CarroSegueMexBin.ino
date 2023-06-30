@@ -3,7 +3,7 @@
 //Declaração de Constantes
 #define DELTAPULSO 11 //Pesquisei e deu 11 pulsos por volta
 #define MAXRPM 280
-const int RPMM = 150;
+const double RPMM = 150;
 #define PWM 230
 #define QtPulso 27
 const int Branco = 1;
@@ -66,7 +66,7 @@ int pulsin = 0, Es = 1, virou = 0;
 unsigned long agora;
 volatile unsigned long pulso;
 
-int Kp = 100, Kd = 0, Ki = 0.0001;
+int Kp = 1, Kd = 0, Ki = 0.0001;
 //Especificando os parâmetros do construtor
 //PID myPID(&Input, &Output, &Setpoint,Kp,Ki,Kd, DIRECT);
 PID myPID(&velocidade1, &MotorD, &RPMM, Kp, Ki, Kd, DIRECT);
@@ -112,7 +112,6 @@ void controla_velocidade() {
   velocidade2 = (200 * pulso2 / dT1) / 0.37;
   pulso2 = 01;
   //Fim de Leitura//Serial.print("Velocidade 1: ");//Serial.print(velocidade1);//Serial.print("  Velocidade 2: ");//Serial.println(velocidade2);
-  
   
 
   myPID.Compute();
