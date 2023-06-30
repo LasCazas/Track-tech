@@ -79,7 +79,6 @@ void contador1() {
   pulso1++;
   pulso++;
 }
-
 void contador2() {
   pulso2++;
 }
@@ -111,7 +110,7 @@ void controla_velocidade() {
 
   velocidade2 = (200 * pulso2 / dT1) / 0.37;
   pulso2 = 01;
-  //Fim de Leitura//Serial.print("Velocidade 1: ");//Serial.print(velocidade1);//Serial.print("  Velocidade 2: ");//Serial.println(velocidade2);
+  //Fim de Leitura//Serial.print("Velocidade 1: ");//Serial.print("  Velocidade 2: ");//Serial.println(velocidade2);
   
 
   myPID.Compute();
@@ -119,13 +118,8 @@ void controla_velocidade() {
   //Conversão RPM para PWM
   velocidade1 = map(velocidade1, 0, MAXRPM, 0, 255);
   velocidade2 = map(velocidade2, 0, MAXRPM, 0, 255);
-
-  Serial.print("Set Point:");
-  Serial.print(RPMM);
-  Serial.print(",");
-  Serial.print("Output:");
-  Serial.println(MotorD);
-
+  Serial.println("VelocidadeE: " + String(velocidade1) + "rpm || VelocidadeD: " + String(velocidade2) + "rpm" + );
+  Serial.println("Set Point:" + String(RPMM) + ",Output" + String(MotorD));
   //Retorna interrupções para cálculo de RPM
   interrupts();
 
@@ -215,11 +209,11 @@ void setup() {
 
   //Contagem de pulsos/tempo cálculo RPM
   pulso1 = 01;
-  attachInterrupt(digitalPinToInterrupt(2), contador1, RISING);
+  attachInterrupt(digitalPinToInterrupt(PINOENCODER), contador1, RISING);
   verificaPulso1 = ultimaV1 = millis();
 
   pulso2 = 01;
-  attachInterrupt(digitalPinToInterrupt(3), contador2, RISING);
+  attachInterrupt(digitalPinToInterrupt(PIN_ENCODER), contador2, RISING);
 
   myPID.SetOutputLimits(0, 255);
   myPID.SetMode(AUTOMATIC);
