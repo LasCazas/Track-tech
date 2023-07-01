@@ -118,7 +118,7 @@ void controla_velocidade() {
   //Conversão RPM para PWM
   velocidade1 = map(velocidade1, 0, MAXRPM, 0, 255);
   velocidade2 = map(velocidade2, 0, MAXRPM, 0, 255);
-  Serial.println("VelocidadeE: " + String(velocidade1) + "rpm || VelocidadeD: " + String(velocidade2) + "rpm" + );
+  Serial.println("VelocidadeE: " + String(velocidade1) + "rpm || VelocidadeD: " + String(velocidade2) + "rpm");
   Serial.println("Set Point:" + String(RPMM) + ",Output" + String(MotorD));
   //Retorna interrupções para cálculo de RPM
   interrupts();
