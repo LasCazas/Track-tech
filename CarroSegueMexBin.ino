@@ -72,7 +72,8 @@ int Kp = 1, Kd = 0, Ki = 0.0001;
 PID myPID(&velocidade1, &MotorD, &RPMM, Kp, Ki, Kd, DIRECT);
 PID miPID(&velocidade2, &MotorE, &RPMM, Kp, Ki, Kd, DIRECT);
 
-int SenOE,SenE, SenC, SenD, SenOD, LeAnte, VDire = 0, VEsq = 0; //LeAnte = leitura anterior VDire = Virar para direita
+bool SenOE,SenE, SenC, SenD, SenOD, LeAnte = 0;
+int VDire = 0, VEsq = 0; //LeAnte = leitura anterior VDire = Virar para direita
 int QuadradoD = 0,QuadradoE = 0,QtQuadRef = 0,Leitura = 0;
 //Funções responsáveis pela contagem de pulsos para cálculo de RPM
 void contador1() {
@@ -116,10 +117,10 @@ void controla_velocidade() {
   myPID.Compute();
   miPID.Compute();
   //Conversão RPM para PWM
-  velocidade1 = map(velocidade1, 0, MAXRPM, 0, 255);
-  velocidade2 = map(velocidade2, 0, MAXRPM, 0, 255);
-  Serial.println("VelocidadeE: " + String(velocidade1) + "rpm || VelocidadeD: " + String(velocidade2) + "rpm");
-  Serial.println("Set Point:" + String(RPMM) + ",Output" + String(MotorD));
+  //velocidade1 = map(velocidade1, 0, MAXRPM, 0, 255);
+  //velocidade2 = map(velocidade2, 0, MAXRPM, 0, 255);
+  Serial.println("VelocidadeE: " + String(velocidade1) + "rpm || VelocidadeD: " + String(velocidade2) + "rpm" );
+  Serial.println("Set Point:" + String(RPMM) + ",Output: " + String(MotorD));
   //Retorna interrupções para cálculo de RPM
   interrupts();
 
@@ -167,20 +168,20 @@ void Andar(int Dir,int delt = Delta){
       digitalWrite(IN2D,HIGH);
       analogWrite(PIN_MOTORD, 0);
     case Direita:
-      digitalWrite(IN1E,HIGH);
+      digitalWrite(IN1E,HIGH); // Frente
       digitalWrite(IN2E,LOW);
       analogWrite(PIN_MOTORE, PWmE);
       //Motor_D
-      digitalWrite(IN2D,LOW);
+      digitalWrite(IN2D,LOW); // Tras
       digitalWrite(IN1D,HIGH);
       analogWrite(PIN_MOTORD, PWmD);
       break;
    case Esquerda:
-      digitalWrite(IN1E,LOW);
+      digitalWrite(IN1E,LOW);   //Tras
       digitalWrite(IN2E,HIGH);
       analogWrite(PIN_MOTORE, PWmE);
       //Motor_D
-      digitalWrite(IN1D,HIGH);
+      digitalWrite(IN1D,HIGH);  //Frente
       digitalWrite(IN2D,LOW);
       analogWrite(PIN_MOTORD, PWmD);
       break;  
@@ -234,10 +235,10 @@ void loop() {
     Leitura = BinDec(SenOE * 10000  + SenE * 1000 + SenC * 100 + SenD * 10 + SenOD); // trasnfroma em bin e dps em dec
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     if( (SenOE || SenOD) != LeAnte){
-      if(SenC == Branco && SenD == Preto && SenOD == Branco){ // Quadrado Branco na direita SenOE == Preto && SenE == Preto &&
+      if(SenC == Branco && SenD == Preto && SenOD == Branco){ // Quadrado Branco na direita 
        QuadradoD++;
        QtQuadRef = QuadradoD;
-      } else if (SenOE == Branco && SenE == Preto && SenC == Branco){ // Quadrado Branco na direita
+      } else if (SenOE == Branco && SenE == Preto && SenC == Branco){ // Quadrado Branco na Esquerda
        QuadradoE++;
        QtQuadRef = QuadradoE;
       }    
@@ -281,18 +282,18 @@ void loop() {
     }
 ////////////////////////////////////////////////////////   VIRAR  ////////////////////////////////////////////////////////
 
-    if ((QuadradoD > 1 && QtQuadRef != QuadradoD) && SenC == Branco && SenD == Branco && SenOD == Branco){
+    if ((QuadradoD > 1 && (QtQuadRef != QuadradoD)) && SenC == Branco && SenD == Branco && SenOD == Branco){
       //encruzilhada
       //90 graus para Direita
       //QtQuadRef = QuadradoD;
       QuadradoD = QuadradoD - 1;
  
-    } else if ( (QuadradoE > 1 && QtQuadRef != QuadradoE)&& SenOE == Branco && SenE == Branco && SenC == Branco && SenD == Branco && SenOD == Branco){
+    } else if ( (QuadradoE > 1 && (QtQuadRef != QuadradoE))&& SenC == Branco && SenD == Branco && SenOD == Branco){
       //encruzilhada
       //90 graus para Esquerda
       QuadradoE = QuadradoE - 1;
      
-    } else if ((QuadradoD == 1 || QtQuadRef == QuadradoD) && SenC == Branco && SenD == Branco && SenOD == Branco){
+    } else if ((QuadradoD == 1 || (QtQuadRef == QuadradoD)) && SenC == Branco && SenD == Branco && SenOD == Branco){
       // vira na primeira e ultima
       //encruzilhada
       Es = 2;
