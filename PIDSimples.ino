@@ -6,7 +6,11 @@ const int Branco = 1;
 const int Preto = 0;
 #define Kp 20 //Variavel que multiplica o erro da posicao do carro para o ajuste fino
 #define Ki 1
-#define Kd 10
+#define Kd 5
+const int buttonPin = 2;  // Pino do botão
+volatile bool buttonState = LOW;  // Estado atual do botão
+volatile bool buttonPressed = false;  // Flag indicando que o botão foi pressionado
+
 // Define os pinos dos sensores E,C,D,O,Esq,Centro,Direita,Oposto
 #define PSenOE 26
 #define PSenE 27
@@ -32,6 +36,12 @@ bool LeAntE =0,LeAntD = 0,Es = 1;
 #define Frente 1
 #define Direita 2
 #define Esquerda 3
+void handleInterrupt() {
+  buttonState = digitalRead(buttonPin);
+  if (buttonState == HIGH) {
+    buttonPressed = true;
+  }
+}
 void Leitura(){
   SenOE = digitalRead(PSenOE);
   SenE = digitalRead(PSenE);
@@ -67,8 +77,8 @@ void Seguir(){
     VeloE = PWME;
     VeloD = PWMD - PID;
   }else{    //Esqr
-    VeloE = PWME;
-    VeloD = PWMD + PID;
+    VeloE = PWME + PID;
+    VeloD = PWMD;
   }
   digitalWrite(IN1,HIGH);
   digitalWrite(IN2,LOW);
@@ -133,9 +143,13 @@ void setup() {
   pinMode(IN3,OUTPUT);
   pinMode(IN4,OUTPUT);
   pinMode(ENB,OUTPUT);
+  pinMode(buttonPin, INPUT_PULLUP);  // Configura o pino do botão como INPUT_PULLUP
+  attachInterrupt(digitalPinToInterrupt(buttonPin), handleInterrupt, RISING);
+  Serial.begin(9600);
 }
 void loop() {
   //Le os Sensores
+  if (buttonPressed){
   Leitura();
   if(Es == 1) {Seguir();} //Estado Padrao ele segue a linha
   if (abs(TempQ - millis()) >= 500){  //Impede a leitura de quadrados se ele n tiver andado mais de 1 segundo para frente
@@ -162,7 +176,7 @@ void loop() {
     Es = 3;  //Virar para Esquerda
     Andar(Esquerda);
   }
-  if((Es == 2) && (SenOE == Preto) && (SenE == Preto) && (SenC == Branco) && (SenD == Preto) && (SenOD == Preto)){
+  if( (Es == 2) && (SenOE == Preto) && (SenE == Preto) && (SenC == Branco) && (SenD == Preto) && (SenOD == Preto) ){
     Es = 1; //Volta para o modo normal
     TempQ = millis();
   } else if((Es == 3) && (SenOE == Preto) && (SenE == Preto) && (SenC == Branco) && (SenD == Preto) && (SenOD == Preto)){
@@ -172,4 +186,10 @@ void loop() {
 /////////////////////////////////////////////////////////////////////////////////////////////////
   LeAntE = SenOE;
   LeAntD = SenOD;
+  }
+  else {
+    Serial.println("=================================");
+    Serial.println("Aguardando o acionamento do botao");
+    Serial.println("=================================");
+  }
 }
