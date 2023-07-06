@@ -152,7 +152,7 @@ void loop() {
   if (buttonPressed){
   Leitura();
   if(Es == 1) {Seguir();} //Estado Padrao ele segue a linha
-  if (abs(TempQ - millis()) >= 500){  //Impede a leitura de quadrados se ele n tiver andado mais de 1 segundo para frente
+  if (millis() - TempQ >= 500){  //Impede a leitura de quadrados se ele n tiver andado mais de 1 segundo para frente
 ///////////////// Leitura de Quadrados //////////////////////////////////////////////////////////
   if ((LeAntE != SenOE) || (LeAntD != SenOD)){
     if((SenOE == Branco) && (SenC == Branco) && (SenOD == Preto) ) {  //Quadrado na Esquerda
@@ -178,10 +178,10 @@ void loop() {
   }
   if( (Es == 2) && (SenOE == Preto) && (SenE == Preto) && (SenC == Branco) && (SenD == Preto) && (SenOD == Preto) ){
     Es = 1; //Volta para o modo normal
-    TempQ = millis();
+    TempQ = millis(); //Ve o tempo que ele terminou a curva
   } else if((Es == 3) && (SenOE == Preto) && (SenE == Preto) && (SenC == Branco) && (SenD == Preto) && (SenOD == Preto)){
     Es = 1; //Volta para o modo normal
-    TempQ = millis();
+    TempQ = millis(); //Ve o tempo que ele terminou a curva
   }
 /////////////////////////////////////////////////////////////////////////////////////////////////
   LeAntE = SenOE;
