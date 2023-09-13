@@ -4,10 +4,6 @@ int P = 0, I = 0, D = 0, PID = 0;
 int erro = 0,erroA = 0,TempQ = 0;
 int VeloE,VeloD,QuadradoE = 0,QuadradoD = 0,QuadRefE = 0,QuadRefD = 0,Es = 1;
 bool LeAntE =0,LeAntD = 0;
-#define Parar 0
-#define Frente 1
-#define Direita 2
-#define Esquerda 3
 void Leitura(){
   SenOE = digitalRead(PSenOE);
   SenE = digitalRead(PSenE);
@@ -25,40 +21,49 @@ void CalculaErro(){
   else if ((SenOE == Preto) && (SenE == Preto) && (SenC == Preto) && (SenD == Branco) && (SenOD == Preto)){erro = 2.5;}
   else if ((SenOE == Preto) && (SenE == Preto) && (SenC == Preto) && (SenD == Preto) && (SenOD == Branco)){erro = 3;}
 }
-void CalculaPID(){
-  if (erro == 0){
+void CalculaPID() {
+  
+  P = erro * Kp;
+  if (erro == 0) {
     I = 0;
   }
-  P = erro * Kp;
+  // Limita a parte integrativa (anti-windup)
   I = I + erro;
-  if (I > 255){I = 255;}  //Delimita 
-  else if (I < -255){I = -255;} //Delimita 
+  if (I > 255) {I = 255;} 
+  else if (I < -255) {I = -255;}
+  // Verifique se o sinal do erro mudou de positivo para negativo
+  if ((erro >= 0 && erroA < 0) || (erro < 0 && erroA >= 0)) {I = 0;} // Zere a parte integrativa quando o sinal do erro muda
   D = erro - erroA;
   PID = P + (Ki * I) + (Kd * D);
-  erroA = erro; 
+  erroA = erro;
 }
-void Seguir(){
+
+void Seguir() {
   CalculaErro();
   CalculaPID();
-  if(PID >= 0){   //Dir
-    VeloE = PWME ;
-    VeloD = PWMD- PID;
-  }else{    //Esqr
+  
+  if (PID >= 0) {   // Dir
+    VeloE = PWME;
+    VeloD = PWMD - PID;
+  } else {    // Esq
     VeloE = PWME + PID;
     VeloD = PWMD;
   }
-  if(VeloD < 0){VeloD = 0;}
-  if(VeloE < 0){VeloE = 0;}
-  digitalWrite(IN1,HIGH);
-  digitalWrite(IN2,LOW);
+  
+  if (VeloD < 0) {VeloD = 0;} // n deixa ele ser negativo
+  if (VeloE < 0) {VeloE = 0;} // n deixa ele ser negativo
+  digitalWrite(IN1, HIGH);
+  digitalWrite(IN2, LOW);
   analogWrite(ENA, VeloE);
-      //Motor_D
-  digitalWrite(IN3,HIGH);
-  digitalWrite(IN4,LOW);
+  
+  // Motor_D
+  digitalWrite(IN3, HIGH);
+  digitalWrite(IN4, LOW);
   analogWrite(ENB, VeloD);
+  
   Serial.println("VeloE: " + String(VeloE) + " || VeloD: " + String(VeloD) + " || Erro: " + String(erro));
 }
-void Andar (int dir){
+void Andar (int dir){ //Funcao auxiliadora
   switch(dir){
     case Frente:
       digitalWrite(IN1,HIGH);
@@ -98,7 +103,33 @@ void Andar (int dir){
       break;
   }    
 }
-
+void ContQuad(){  //contagem de quadrados
+  if ((LeAntE != SenOE) || (LeAntD != SenOD)){  //Não deixa entrar aqui dnv
+    if((SenOE == Branco) && (SenOD == Preto) && (SenE == Preto)) {  //Quadrado na Esquerda
+      QuadradoE = QuadradoE + 1;
+      QuadRefE = QuadradoE;
+      
+    } else if((SenOE == Preto) && (SenOD == Branco) && (SenD == Preto)) { //Quadrado na Direita 
+      QuadradoD = QuadradoD + 1;
+      QuadRefD = QuadradoD;
+    }
+  }
+}
+void SubViraQuad(){ // Subtrai os quadrados e vira no momento certo
+  if(((QuadradoD == 1) || (QuadRefD == QuadradoD)) && (SenC == Branco) && (SenD == Branco) && (SenOD == Branco)){
+    Es = 2;  //Virar para direita
+    QuadradoD = QuadradoD - 1;
+    Andar(Direita);
+    Serial.println("Passou aqui" + String(Es));
+  } else if(((QuadradoE == 1) || (QuadRefE == QuadradoE)) && (SenC == Branco) && (SenE == Branco) && (SenOE == Branco)){
+    Es = 3;  //Virar para Esquerda
+    Andar(Esquerda);
+    QuadradoE = QuadradoE - 1;
+  }
+  if( ( (QuadradoD > 1) || (QuadRefD != QuadradoD)) && (SenC == Branco) && (SenD == Branco) && (SenOD == Branco)){QuadradoD = QuadradoD - 1;}
+  if( ( (QuadradoE > 1) || (QuadRefE != QuadradoE)) && (SenC == Branco) && (SenE == Branco) && (SenOE == Branco)){QuadradoE = QuadradoE - 1;}
+  
+}
 void setup() {
   //Sensores
   pinMode(PSenOE,INPUT);
@@ -116,44 +147,18 @@ void setup() {
   Serial.begin(9600);
 }
 void loop() {
-  //Le os Sensores
 
-  Leitura();
-  if(Es == 1) {Seguir();} //Estado Padrao ele segue a linha
-  if (millis() - TempQ >= 500){  //Impede a leitura de quadrados se ele n tiver andado mais de 1 segundo para frente
-///////////////// Leitura de Quadrados //////////////////////////////////////////////////////////
-  if ((LeAntE != SenOE) || (LeAntD != SenOD)){
+  Leitura();//Le os Sensores
+  if(Es == 1) {
+    Seguir(); //Estado Padrao ele segue a linha
 
-    if((SenOE == Branco) && (SenC == Branco) && (SenOD == Preto) && (SenE == Preto)) {  //Quadrado na Esquerda
-      QuadradoE = QuadradoE + 1;
-      QuadRefE = QuadradoE;
-      
-    } else if((SenOE == Preto) && (SenC == Branco) && (SenOD == Branco) && (SenD == Preto)) { //Quadrado na Direita 
-      QuadradoD = QuadradoD + 1;
-      QuadRefD = QuadradoD;
-
-    }
-  }
-}
-/////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////// Soma Quadrados ////////////////////////////////////////
-  if (Es == 1){
-    if(((QuadradoD == 1) || (QuadRefD == QuadradoD)) && (SenC == Branco) && (SenD == Branco) && (SenOD == Branco)){
-    Es = 2;  //Virar para direita
-    QuadradoD = QuadradoD - 1;
-    Andar(Direita);
-    Serial.println("Passou aqui" + String(Es));
-  } else if(((QuadradoE == 1) || (QuadRefE == QuadradoE)) && (SenC == Branco) && (SenE == Branco) && (SenOE == Branco)){
-    Es = 3;  //Virar para Esquerda
-    Andar(Esquerda);
-    QuadradoE = QuadradoE - 1;
-  }
-  if( ( (QuadradoD > 1) || (QuadRefD != QuadradoD)) && (SenC == Branco) && (SenD == Branco) && (SenOD == Branco)){QuadradoD = QuadradoD - 1;}
-  if(((QuadradoE > 1) || (QuadRefE != QuadradoE)) && (SenC == Branco) && (SenE == Branco) && (SenOE == Branco)){QuadradoE = QuadradoE - 1;}
-  
-/////////////////////////////////////////// Virar  ////////////////////////////////////////////
-  
-  }
+    ///////////////// Leitura de Quadrados /////////////////
+    if (millis() - TempQ >= 500){//Impede a leitura de quadrados se ele n tiver andado mais de 1 segundo para frente dps de ter virado
+      ContQuad();
+      SubViraQuad();  //Subtrai quadrados e analisa se esta na hora de virar
+    } 
+  } 
+  ////ANALISA SE TERMINOU DE FAZER A CURVA, (TESTA SE VOLTOU PARA A LINHA PRA ESQUERDA) Es = 2 (Esquerda) DIR Es = 3 (direita)
   if( (Es == 2) && (SenOE == Preto) && (SenE == Preto) && (SenC == Branco) && (SenD == Preto) && (SenOD == Preto) ){
     Es = 1; //Volta para o modo normal
     TempQ = millis(); //Ve o tempo que ele terminou a curva
@@ -161,13 +166,13 @@ void loop() {
     Es = 1; //Volta para o modo normal
     TempQ = millis(); //Ve o tempo que ele terminou a curva
   }
-  if( (Es == 2) && (SenOE == Preto) && (SenE == Preto) && (SenC == Preto) && (SenD == Branco) && (SenOD == Preto) ){
-    Es = 1; //Volta para o modo normal
-    TempQ = millis(); //Ve o tempo que ele terminou a curva
-  } else if((Es == 3) && (SenOE == Preto) && (SenE == Preto) && (SenC == Preto) && (SenD == Branco) && (SenOD == Preto)){
-    Es = 1; //Volta para o modo normal
-    TempQ = millis(); //Ve o tempo que ele terminou a curva
-  }
+  //if( (Es == 2) && (SenOE == Preto) && (SenE == Preto) && (SenC == Preto) && (SenD == Branco) && (SenOD == Preto) ){
+  //  Es = 1; //Volta para o modo normal
+   // TempQ = millis(); //Ve o tempo que ele terminou a curva
+  //} else if((Es == 3) && (SenOE == Preto) && (SenE == Branco) && (SenC == Preto) && (SenD == Preto) && (SenOD == Preto)){
+   // Es = 1; //Volta para o modo normal
+    //TempQ = millis(); //Ve o tempo que ele terminou a curva
+  //}
 /////////////////////////////////////////////////////////////////////////////////////////////////
   LeAntE = SenOE;
   LeAntD = SenOD;
