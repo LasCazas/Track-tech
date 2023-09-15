@@ -22,7 +22,6 @@ void CalculaErro(){
   else if ((SenOE == Preto) && (SenE == Preto) && (SenC == Preto) && (SenD == Preto) && (SenOD == Branco)){erro = 3;}
 }
 void CalculaPID() {
-  
   P = erro * Kp;
   if (erro == 0) {
     I = 0;
@@ -148,7 +147,9 @@ void setup() {
 }
 void loop() {
 
-  Leitura();//Le os Sensores
+  Leitura();
+  Andar(Frente);
+  //Le os Sensores
   if(Es == 1) {
     Seguir(); //Estado Padrao ele segue a linha
 
@@ -177,4 +178,5 @@ void loop() {
   LeAntE = SenOE;
   LeAntD = SenOD;
   //Serial.println("Quantidade Quadrados: " + String(QuadradoD) + " | |Estados: " + String(Es) + " Ref: " + String(QuadRefD));
+
 }
