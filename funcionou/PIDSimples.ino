@@ -1,16 +1,26 @@
 #include "Constante.c"
+int ASenOE, ASenE, ASenC, ASenD, ASenOD;
 bool SenOE, SenE, SenC, SenD, SenOD; 
-int P = 0, I = 0, D = 0, PID = 0;
+int P = 0, I = 0, D = 0, PIDD = 0;
 int erro = 0,erroA = 0,TempQ = 0;
 int VeloE,VeloD,QuadradoE = 0,QuadradoD = 0,QuadRefE = 0,QuadRefD = 0,Es = 1;
 bool LeAntE =0,LeAntD = 0;
 void Leitura(){
-  SenOE = digitalRead(PSenOE);
-  SenE = digitalRead(PSenE);
-  SenC = digitalRead(PSenC);
-  SenD = digitalRead(PSenD);
-  SenOD = digitalRead(PSenOD);
-  Serial.println(String(SenOE) + " "+ String(SenE) + " "+ String(SenC) + " "+ String(SenD) + " "+ String(SenOD));
+  ASenOE = digitalRead(PSenOE);
+  ASenE = digitalRead(PSenE);
+  ASenC = digitalRead(PSenC);
+  ASenD = digitalRead(PSenD);
+  ASenOD = digitalRead(PSenOD);
+  Discretiza();
+  Serial.println(String(ASenOE) + " "+ String(ASenE) + " "+ String(ASenC) + " "+ String(ASenD) + " "+ String(ASenOD));
+  //Serial.println(String(SenOE) + " "+ String(SenE) + " "+ String(SenC) + " "+ String(SenD) + " "+ String(SenOD));
+}
+void Discretiza(){
+  SenOE = (ASenOE >= corte)? Branco :Preto;
+  SenE = (ASenE >= corte)? Branco :Preto;
+  SenC = (ASenC >= corte)? Branco :Preto;
+  SenD = (ASenD >= corte)? Branco :Preto;
+  SenOD = (ASenOD >= corte)? Branco :Preto;
 }
 void CalculaErro(){
   if((SenOE == Preto) && (SenE == Preto) && (SenC == Branco) && (SenD == Preto) && (SenOD == Preto)){erro = 0;}
@@ -33,19 +43,18 @@ void CalculaPID() {
   // Verifique se o sinal do erro mudou de positivo para negativo
   if ((erro >= 0 && erroA < 0) || (erro < 0 && erroA >= 0)) {I = 0;} // Zere a parte integrativa quando o sinal do erro muda
   D = erro - erroA;
-  PID = P + (Ki * I) + (Kd * D);
+  PIDD = P + (Ki * I) + (Kd * D);
   erroA = erro;
 }
-
 void Seguir() {
   CalculaErro();
   CalculaPID();
   
-  if (PID >= 0) {   // Dir
+  if (PIDD >= 0) {   // Dir
     VeloE = PWME;
-    VeloD = PWMD - PID;
+    VeloD = PWMD - PIDD;
   } else {    // Esq
-    VeloE = PWME + PID;
+    VeloE = PWME + PIDD;
     VeloD = PWMD;
   }
   
@@ -67,7 +76,7 @@ void Andar (int dir){ //Funcao auxiliadora
     case Frente:
       digitalWrite(IN1,HIGH);
       digitalWrite(IN2,LOW);
-      analogWrite(ENA, 20);
+      analogWrite(ENA, PWME);
       //Motor_D
       digitalWrite(IN3,HIGH);
       digitalWrite(IN4,LOW);
